@@ -2,6 +2,31 @@ import pygame
 from os.path import join
 import random
 
+class Player(pygame.sprite.Sprite):
+    def __init__(self, groups):
+        super().__init__(groups)
+        self.image = pygame.image.load(join('images', 'player_ship.png')).convert_alpha()
+        self.rect = self.image.get_frect(center = (SCREEN_WIDTH/2, SCREEN_HEIGHT/2))
+        self.direction = pygame.Vector2()
+        self.speed = 300
+
+    def update(self, keys, deltatime):
+        self.direction.x = int(keys[pygame.K_RIGHT]) - int(keys[pygame.K_LEFT])
+        self.direction.y = int(keys[pygame.K_DOWN]) - int(keys[pygame.K_UP])
+        self.direction = self.direction.normalize() if self.direction else self.direction
+        self.rect.center += self.direction * self.speed * deltatime
+
+        recent_keys = pygame.key.get_just_pressed()
+        if recent_keys[pygame.K_SPACE]:
+            print('fire laser')
+
+class Star(pygame.sprite.Sprite):
+    def __init__(self, groups, surface):
+        super().__init__(groups)
+        self.image = surface
+        position = (random.randint(0, SCREEN_WIDTH), random.randint(0, SCREEN_HEIGHT))
+        self.rect = self.image.get_frect(center = position)
+
 pygame.init()
 SCREEN_WIDTH, SCREEN_HEIGHT = 1280, 720
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -14,14 +39,13 @@ surface = pygame.Surface((80, 80))
 surface.fill('purple')
 x = 0
 
-player_surface = pygame.image.load(join('images', 'player_ship.png')).convert_alpha()
-player_rectangle = player_surface.get_frect(center = (SCREEN_WIDTH/2, SCREEN_HEIGHT/2))
-player_direction = pygame.Vector2()
-player_speed = 300
-
+all_sprites = pygame.sprite.Group()
 star_surface = pygame.image.load(join('images', 'star.png')).convert_alpha()
 
-star_positions = [(random.randint(0, SCREEN_WIDTH), random.randint(0, SCREEN_HEIGHT)) for i in range(30)]
+for i in range(30):
+    Star(all_sprites, star_surface)
+player = Player(all_sprites)
+
 
 enemy_surface = pygame.image.load(join('images', 'enemy_ship.png')).convert_alpha()
 enemy_rectangle = enemy_surface.get_frect(center = (SCREEN_WIDTH/2, SCREEN_HEIGHT/2))
@@ -36,32 +60,13 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-        # if event.type == pygame.KEYDOWN and event.key == pygame.K_1:
-        #     print(1)
-        # if event.type == pygame.MOUSEMOTION:
-        #     player_rectangle.center = event.pos
 
     #input
     keys = pygame.key.get_pressed()
-    
-    #print(pygame.mouse.get_rel())
-    player_direction.x = int(keys[pygame.K_RIGHT]) - int(keys[pygame.K_LEFT])
-    player_direction.y = int(keys[pygame.K_DOWN]) - int(keys[pygame.K_UP])
-    player_direction = player_direction.normalize() if player_direction else player_direction
-    player_rectangle.center += player_direction * player_speed * deltatime
+    all_sprites.update(keys, deltatime)
 
-    recent_keys = pygame.key.get_just_pressed()
-    if recent_keys[pygame.K_SPACE]:
-        print('fire laser')
-    
     #draw the game
-    screen.fill('cadetblue4')
-    for position in star_positions:
-        screen.blit(star_surface, position)
-    
-    screen.blit(laser_surface, laser_rectangle)
-    screen.blit(enemy_surface, enemy_rectangle)
-    screen.blit(player_surface, player_rectangle)
-
+    screen.fill('#0a205a')
+    all_sprites.draw(screen)
     pygame.display.update()
 pygame.quit()
