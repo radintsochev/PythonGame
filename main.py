@@ -32,13 +32,6 @@ SCREEN_WIDTH, SCREEN_HEIGHT = 1280, 720
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Space Battle")
 
-running = True
-clock = pygame.time.Clock()
-
-surface = pygame.Surface((80, 80))
-surface.fill('purple')
-x = 0
-
 all_sprites = pygame.sprite.Group()
 star_surface = pygame.image.load(join('images', 'star.png')).convert_alpha()
 
@@ -46,13 +39,14 @@ for i in range(30):
     Star(all_sprites, star_surface)
 player = Player(all_sprites)
 
-
 enemy_surface = pygame.image.load(join('images', 'enemy_ship.png')).convert_alpha()
 enemy_rectangle = enemy_surface.get_frect(center = (SCREEN_WIDTH/2, SCREEN_HEIGHT/2))
 
 laser_surface = pygame.image.load(join('images', 'laser.png')).convert_alpha()
 laser_rectangle = laser_surface.get_frect(bottomleft = (20, SCREEN_HEIGHT - 20))
 
+running = True
+clock = pygame.time.Clock()
 
 while running:
     deltatime = clock.tick() / 1000
