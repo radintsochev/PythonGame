@@ -85,8 +85,6 @@ player = Player(all_sprites)
 running = True
 clock = pygame.time.Clock()
 
-#custom events -> meteor event
-
 enemy_event = pygame.event.custom_type()
 pygame.time.set_timer(enemy_event, 1000)
 
