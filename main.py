@@ -1,6 +1,7 @@
 import pygame
 from os.path import join
 import random
+import functools
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, groups):
@@ -78,14 +79,11 @@ class Explosion(pygame.sprite.Sprite):
         else:
             self.kill()
 
-
-
 class Star(pygame.sprite.Sprite):
-    def __init__(self, groups, surface):
+    def __init__(self, groups, surface, rect):
         super().__init__(groups)
         self.image = surface
-        position = (random.randint(0, SCREEN_WIDTH), random.randint(0, SCREEN_HEIGHT))
-        self.rect = self.image.get_frect(center = position)
+        self.rect = rect
 
 def laser_collisions():
     for laser in laser_sprites:
@@ -95,11 +93,10 @@ def laser_collisions():
             Explosion(all_sprites, explosion_frames, laser.rect.midtop)
 
 def player_collisions():
-    global running
     if pygame.sprite.spritecollide(player, enemy_sprites, True, pygame.sprite.collide_mask):
         damage_sound_effect.play()
         player.kill()
-        running = False
+        game_over_screen()
 
 def display_time_passsed():
     current_time = pygame.time.get_ticks() // 1000
@@ -111,6 +108,60 @@ def display_time_passsed():
     screen.blit(timer_surface, timer_rect)
     pygame.draw.rect(screen, (230, 230, 230), timer_rect.inflate(15, 15), 5, 5)
 
+def fade(width, height): 
+    fade = pygame.Surface((width, height))
+    fade.fill((0,0,0))
+    for alpha in range(0, 300):
+        fade.set_alpha(alpha)
+        screen.fill('#2c205a')
+        all_sprites.draw(screen)
+        display_time_passsed()
+        screen.blit(fade, (0,0))
+        pygame.display.update()
+        pygame.time.delay(5)
+
+def game_over_screen():
+    global running
+    fade(SCREEN_WIDTH, SCREEN_HEIGHT)
+    game_over = True
+    game_over_text_surface = game_over_font.render('Game Over', True, (255, 0, 0))
+    game_over_text_rect = game_over_text_surface.get_frect(center = (SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2))
+    game_over_info_surface = font.render('Press any key to exit...', True, (255, 0, 0))
+    game_over_info_rect = game_over_info_surface.get_frect(midtop = game_over_text_rect.inflate(15, 15).midbottom)
+    screen.fill('black')
+    screen.blit(game_over_text_surface, game_over_text_rect)
+    screen.blit(game_over_info_surface, game_over_info_rect)
+    pygame.display.flip()
+    while game_over:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT or event.type == pygame.KEYDOWN:
+                game_over = False
+    running = False
+
+def generate_stars(num_stars):
+    star_width, star_height = star_surface.get_size()
+    star_positions = []
+    max_tries = 50
+    for _ in range(num_stars):
+        tries_count = 0
+        while True:
+            if tries_count > max_tries:
+                break
+            x = random.randint(0, SCREEN_WIDTH - star_width)
+            y = random.randint(0, SCREEN_HEIGHT - star_height)
+
+            # Create a rect for the new star
+            new_star_rect = pygame.Rect(x, y, star_width, star_height)
+
+            # Check for overlap with existing stars
+            
+            if not any(new_star_rect.colliderect(existing) for existing in star_positions):
+                star_positions.append(new_star_rect)
+                break  # Exit loop when a valid position is found
+            else:
+                tries_count += 1
+
+    return star_positions
 
 pygame.init()
 SCREEN_WIDTH, SCREEN_HEIGHT = 1280, 720
@@ -119,9 +170,11 @@ pygame.display.set_caption("Space Battle")
 
 all_sprites = pygame.sprite.Group()
 enemy_sprites = pygame.sprite.Group()
-laser_sprites = pygame.sprite.Group() 
+laser_sprites = pygame.sprite.Group()
+star_sprites = pygame.sprite.Group()
 
 font = pygame.font.Font(join('game_assets', "Sterion-BLLld.ttf"), 30)
+game_over_font = pygame.font.Font(join('game_assets', "Sterion-BLLld.ttf"), 100)
 
 laser_surface = pygame.image.load(join('game_assets', 'laser.png')).convert_alpha()
 enemy_surface = pygame.image.load(join('game_assets', 'enemy_ship.png')).convert_alpha()
@@ -129,24 +182,26 @@ star_surface = pygame.image.load(join('game_assets', 'star.png')).convert_alpha(
 explosion_frames = [pygame.image.load(join('game_assets', 'explosion', f'{i}.png')).convert_alpha() for i in range(1, 13)]
 
 laser_sound_effect = pygame.mixer.Sound(join('game_assets', 'sounds', 'laser_sound.mp3'))
-laser_sound_effect.set_volume(0.5)
+laser_sound_effect.set_volume(0.15)
 explosion_sound_effect = pygame.mixer.Sound(join('game_assets', 'sounds', 'explosion_sound.mp3'))
-explosion_sound_effect.set_volume(0.75)
+explosion_sound_effect.set_volume(0.25)
 damage_sound_effect = pygame.mixer.Sound(join('game_assets', 'sounds', 'damage_sound.mp3'))
 background_music = pygame.mixer.Sound(join('game_assets', 'sounds', 'background_music.mp3'))
-background_music.set_volume(0.3)
+background_music.set_volume(0.1)
 background_music.play(loops= -1)
 
-for i in range(30):
-    Star(all_sprites, star_surface)
+star_rects = generate_stars(70)
+
+for rect in star_rects:
+    Star((all_sprites, star_sprites), star_surface, rect)
 player = Player(all_sprites)
 
-
 running = True
+game_over = False
 clock = pygame.time.Clock()
 
 enemy_event = pygame.event.custom_type()
-pygame.time.set_timer(enemy_event, 2000)
+pygame.time.set_timer(enemy_event, 1000)
 
 while running:
     deltatime = clock.tick() / 1000
@@ -165,10 +220,9 @@ while running:
     player_collisions()
 
     #draw the game
-    screen.fill('#2c205a')
-    all_sprites.draw(screen)
-    display_time_passsed()
-
-    pygame.display.update()
-
+    if running:
+        screen.fill('#2c205a')
+        all_sprites.draw(screen)
+        display_time_passsed()
+        pygame.display.update()
 pygame.quit()
