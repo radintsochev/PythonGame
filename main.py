@@ -1,7 +1,6 @@
 import pygame
 from os.path import join
 import random
-import functools
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, groups):
@@ -124,17 +123,17 @@ def laser_collisions():
 
             enemies_destroyed += 1
 
-def player_collisions():
+def player_collisions(top5):
     global lives
     global player
     collided_enemy = pygame.sprite.spritecollide(player, enemy_sprites, True, pygame.sprite.collide_mask)
     if collided_enemy:
         damage_sound_effect.play()
-        Explosion(all_sprites, explosion_frames, collided_enemy[0].rect.center)
         lives -= 1
         if lives == 0:
             player.kill()
-            game_over_screen()
+            game_over_screen(top5)
+        Explosion(all_sprites, explosion_frames, collided_enemy[0].rect.center)
 
     collided_mov_spd = pygame.sprite.spritecollide(player, mov_spd_sprites, True, pygame.sprite.collide_mask)
     if collided_mov_spd:
@@ -168,7 +167,7 @@ def fade(width, height):
         pygame.display.update()
         pygame.time.delay(5)
 
-def game_over_screen():
+def game_over_screen(top5):
     global running
     global enemies_destroyed
     fade(SCREEN_WIDTH, SCREEN_HEIGHT)
@@ -176,11 +175,18 @@ def game_over_screen():
     game_over_text_surface = game_over_font.render('Game Over', True, (255, 0, 0))
     game_over_text_rect = game_over_text_surface.get_frect(center = (SCREEN_WIDTH / 2, SCREEN_HEIGHT / 4))
     game_over_info_surface = font.render('Press ESC to exit...', True, (255, 0, 0))
-    game_over_info_rect = game_over_info_surface.get_frect(midtop = game_over_text_rect.inflate(15, 15).midbottom)
+    game_over_info_rect = game_over_info_surface.get_frect(midtop = game_over_text_rect.inflate(0, 30).midbottom)
     screen.fill('black')
     screen.blit(game_over_text_surface, game_over_text_rect)
     screen.blit(game_over_info_surface, game_over_info_rect)
-    display_game_info('final score', enemies_destroyed, game_over_info_rect.inflate(15, 15).bottomleft, color=(255, 0 , 0))
+    display_game_info('final score', enemies_destroyed, game_over_info_rect.inflate(0, 30).bottomleft, color=(255, 0 , 0))
+    leaderboard_surface = font.render('High scores:', True, (255, 0, 0))
+    leaderboard_rect = leaderboard_surface.get_frect(topleft = game_over_info_rect.inflate(0, 5 * font.get_height()).bottomleft)
+    screen.blit(leaderboard_surface, leaderboard_rect)
+    number = 0
+    for score in top5:
+        display_game_info(number + 1, score, leaderboard_rect.inflate(0, number * (30 + font.get_height())).bottomleft, color=(255, 0 , 0))
+        number += 1
     pygame.display.flip()
     while game_over:
         for event in pygame.event.get():
@@ -218,6 +224,11 @@ def draw_window():
     display_game_info('score', enemies_destroyed, (10, 10), True)
     display_game_info('lives', lives, (10, font.get_height() + 20))
 
+def read_top5(path):
+    with open(path, 'r') as file:
+        return file.readlines()
+
+
 pygame.init()
 SCREEN_WIDTH, SCREEN_HEIGHT = 1280, 720
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -251,29 +262,24 @@ background_music.play(loops= -1)
 upgrade_sound_effect = pygame.mixer.Sound(join('game_assets', 'sounds', 'upgrade.mp3'))
 
 star_rects = generate_stars(70)
-
 for rect in star_rects:
     Star((all_sprites, star_sprites), star_surface, rect)
 player = Player(all_sprites)
-
-running = True
-game_over = False
 enemies_destroyed = 0
 lives = 3
 att_spd_rate = 0.3
 mov_spd_rate = 0.3
-time_passed = pygame.time.get_ticks()
-clock = pygame.time.Clock()
-
 enemy_spawn_cooldown = 2000
 enemy_event = pygame.event.custom_type()
 increase_enemies_event = pygame.event.custom_type()
 pygame.time.set_timer(increase_enemies_event, 3500)
+clock = pygame.time.Clock()
+top5 = read_top5(join('game_assets', 'top5.txt'))
+running = True
 
 while running:
     current_time = pygame.time.get_ticks()
     deltatime = clock.tick() / 1000
-    #event loop
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -283,15 +289,13 @@ while running:
             enemy_spawn_cooldown *= 0.92
             pygame.time.set_timer(enemy_event, int(enemy_spawn_cooldown))
 
-    #input
     keys = pygame.key.get_pressed()
     all_sprites.update(keys, deltatime)
     laser_collisions()
-    player_collisions()
+    player_collisions(top5)
 
     print(f'movement speed: {player.speed}, cooldown: {player.cooldown_time}')
 
-    #draw the game
     if running:
         draw_window()
         pygame.display.update()
