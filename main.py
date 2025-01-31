@@ -1,6 +1,7 @@
 import pygame
 from os.path import join
 import random
+import numpy as np
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, groups):
@@ -20,8 +21,22 @@ class Player(pygame.sprite.Sprite):
                 self.can_shoot = True
 
     def update(self, keys, deltatime):
-        self.direction.x = int(keys[pygame.K_RIGHT]) - int(keys[pygame.K_LEFT])
-        self.direction.y = int(keys[pygame.K_DOWN]) - int(keys[pygame.K_UP])
+        can_up, can_down, can_right, can_left = True, True, True, True
+        if self.rect.centerx <= self.image.get_width() / 2:
+            can_left = False
+
+        if self.rect.centerx >= SCREEN_WIDTH - self.image.get_width() / 2:
+            can_right = False
+
+        if self.rect.centery <= self.image.get_height() / 2:
+            can_up = False
+
+        if self.rect.centery >= SCREEN_HEIGHT - self.image.get_height() / 2:
+            can_down = False
+
+        
+        self.direction.x = can_right * int(keys[pygame.K_RIGHT]) - can_left * int(keys[pygame.K_LEFT])
+        self.direction.y = can_down * int(keys[pygame.K_DOWN]) - can_up * int(keys[pygame.K_UP])
         self.direction = self.direction.normalize() if self.direction else self.direction
         self.rect.center += self.direction * self.speed * deltatime
 
@@ -123,7 +138,7 @@ def laser_collisions():
 
             enemies_destroyed += 1
 
-def player_collisions(top5):
+def player_collisions(high_scores):
     global lives
     global player
     collided_enemy = pygame.sprite.spritecollide(player, enemy_sprites, True, pygame.sprite.collide_mask)
@@ -132,7 +147,7 @@ def player_collisions(top5):
         lives -= 1
         if lives == 0:
             player.kill()
-            game_over_screen(top5)
+            game_over_screen(high_scores)
         Explosion(all_sprites, explosion_frames, collided_enemy[0].rect.center)
 
     collided_mov_spd = pygame.sprite.spritecollide(player, mov_spd_sprites, True, pygame.sprite.collide_mask)
@@ -167,9 +182,11 @@ def fade(width, height):
         pygame.display.update()
         pygame.time.delay(5)
 
-def game_over_screen(top5):
+def game_over_screen(high_scores):
     global running
     global enemies_destroyed
+    high_scores = update_high_score(high_scores, enemies_destroyed)
+    write_high_scores(join('game_assets', 'high_scores.txt'), high_scores)
     fade(SCREEN_WIDTH, SCREEN_HEIGHT)
     game_over = True
     game_over_text_surface = game_over_font.render('Game Over', True, (255, 0, 0))
@@ -184,7 +201,7 @@ def game_over_screen(top5):
     leaderboard_rect = leaderboard_surface.get_frect(topleft = game_over_info_rect.inflate(0, 5 * font.get_height()).bottomleft)
     screen.blit(leaderboard_surface, leaderboard_rect)
     number = 0
-    for score in top5:
+    for score in high_scores:
         display_game_info(number + 1, score, leaderboard_rect.inflate(0, number * (30 + font.get_height())).bottomleft, color=(255, 0 , 0))
         number += 1
     pygame.display.flip()
@@ -224,9 +241,21 @@ def draw_window():
     display_game_info('score', enemies_destroyed, (10, 10), True)
     display_game_info('lives', lives, (10, font.get_height() + 20))
 
-def read_top5(path):
+def read_high_scores(path):
     with open(path, 'r') as file:
         return file.readlines()
+    
+def write_high_scores(path, high_scores):
+    with open(path, 'w') as file:
+        for i in range(len(high_scores)):
+            file.write(f'{high_scores[i]}\n')
+
+
+def update_high_score(high_scores, score):
+    high_scores_int = [int(hs) for hs in high_scores]
+    high_scores_int.append(score)
+    high_scores_int = sorted(high_scores_int, reverse=True)
+    return high_scores_int[:5]
 
 
 pygame.init()
@@ -274,7 +303,7 @@ enemy_event = pygame.event.custom_type()
 increase_enemies_event = pygame.event.custom_type()
 pygame.time.set_timer(increase_enemies_event, 3500)
 clock = pygame.time.Clock()
-top5 = read_top5(join('game_assets', 'top5.txt'))
+high_scores = read_high_scores(join('game_assets', 'high_scores.txt'))
 running = True
 
 while running:
@@ -292,7 +321,7 @@ while running:
     keys = pygame.key.get_pressed()
     all_sprites.update(keys, deltatime)
     laser_collisions()
-    player_collisions(top5)
+    player_collisions(high_scores)
 
     print(f'movement speed: {player.speed}, cooldown: {player.cooldown_time}')
 
