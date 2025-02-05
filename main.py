@@ -1,8 +1,12 @@
-import pygame
+"""
+This module contains the main execution code for the project.
+"""
 import sys
+import pygame
 from config import SCREEN_WIDTH, SCREEN_HEIGHT, PATHS, GAME_SETTINGS
 from sprites import Player, Enemy, Star
-from game_functions import *
+from game_functions import generate_stars, read_high_scores
+from game_functions import handle_collisions, game_over_screen, draw_window
 
 # Initialization
 pygame.init()
@@ -13,7 +17,10 @@ font = pygame.font.Font(PATHS['fonts']['regular'], 30)
 game_over_font = pygame.font.Font(PATHS['fonts']['game_over'], 100)
 
 def load_assets():
-    assets = {
+    '''
+    This func loads the assets from the config file.
+    '''
+    assets_to_return = {
         'player': pygame.image.load(PATHS['player']).convert_alpha(),
         'laser': pygame.image.load(PATHS['laser']).convert_alpha(),
         'enemy': pygame.image.load(PATHS['enemy']).convert_alpha(),
@@ -33,10 +40,10 @@ def load_assets():
             'game_over': pygame.font.Font(PATHS['fonts']['game_over'], 100)
         }
     }
-    assets['sounds']['laser'].set_volume(0.15)
-    assets['sounds']['explosion'].set_volume(0.25)
-    assets['sounds']['background'].set_volume(0.1)
-    return assets
+    assets_to_return['sounds']['laser'].set_volume(0.15)
+    assets_to_return['sounds']['explosion'].set_volume(0.25)
+    assets_to_return['sounds']['background'].set_volume(0.1)
+    return assets_to_return
 
 # Game state
 game_state = {
@@ -74,14 +81,14 @@ while game_state['running']:
     dt = clock.tick(60) / 1000
     current_time = pygame.time.get_ticks()
     keys = pygame.key.get_pressed()
-    
     # Event handling
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             game_state['running'] = False
 
     # Progressive difficulty
-    if current_time - game_state['last_difficulty_increase'] > GAME_SETTINGS['difficulty_increase_interval']:
+    time_since_last_increase = current_time - game_state['last_difficulty_increase']
+    if time_since_last_increase > GAME_SETTINGS['difficulty_increase_interval']:
         game_state['spawn_cooldown'] = max(100, int(game_state['spawn_cooldown'] * 0.92))
         game_state['last_difficulty_increase'] = current_time
 
@@ -91,28 +98,27 @@ while game_state['running']:
 
     # Update
     all_sprites.update(keys, dt)
-    
     # Collision handling
-    handle_collisions(lasers, enemies, player, all_sprites, explosions, upgrades, assets, game_state)
-    
+    handle_collisions(lasers, enemies, player, all_sprites,
+                      explosions, upgrades, assets, game_state)
     # Check game over
     if game_state['lives'] <= 0:
-            game_state['running'] = game_over_screen(
-                screen,
-                font,
-                game_over_font,
-                high_scores,
-                game_state['score'],
-                game_state['lives'],
-                all_sprites
-            )
-            game_state['running'] = False
+        game_state['running'] = game_over_screen(
+            screen,
+            font,
+            game_over_font,
+            high_scores,
+            game_state['score'],
+            game_state['lives'],
+            all_sprites
+        )
+        game_state['running'] = False
 
     # Drawing
     screen.fill('#2c205a')  # Original background color
     stars.draw(screen)      # Draw stars first
     all_sprites.draw(screen)
-    
+
     # UI
     draw_window(screen, all_sprites, game_state['score'], game_state['lives'], font)
     pygame.display.update()
