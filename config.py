@@ -1,4 +1,7 @@
-import os
+'''
+Configuration file for the Python game
+Contains constants and settings used throughout the game
+'''
 from os.path import join
 
 SCREEN_WIDTH = 1280

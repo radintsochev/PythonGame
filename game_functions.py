@@ -1,25 +1,34 @@
-import pygame
+'''
+This module contains various game functions for handling collisions, displaying game information, 
+fading effects, game over screen, generating stars, drawing the game window,
+and managing high scores.
+'''
 import random
+import pygame
 from config import GAME_SETTINGS, SCREEN_WIDTH, SCREEN_HEIGHT, PATHS
 from sprites import UpgradeIcon, Explosion
 
-def handle_collisions(lasers, enemies, player, all_sprites, explosions, upgrades, assets, game_state):
-    # Laser-enemy collisions
+def handle_collisions(lasers, enemies, player, all_sprites,
+                      explosions, upgrades, assets, game_state):
+    '''
+    Handles collisions between lasers and enemies, player and enemies, and player and upgrades.
+    '''
     mov_spd_flag = False
     att_spd_flag = False
     for laser in lasers:
-        collided_enemy = pygame.sprite.spritecollide(laser, enemies, True, pygame.sprite.collide_mask)
+        collided_enemy = pygame.sprite.spritecollide(laser, enemies,
+                                        True, pygame.sprite.collide_mask)
         if collided_enemy:
             laser.kill()
             game_state['score'] += 1
             assets['sounds']['explosion'].play()
-            
+
             # Spawn upgrades
             if random.uniform(0, 1) < GAME_SETTINGS['mov_spd_rate']:
                 mov_spd_flag = True
             if random.uniform(0, 1) < GAME_SETTINGS['att_spd_rate']:
                 att_spd_flag = True
-            
+
             if mov_spd_flag and not att_spd_flag:
                 UpgradeIcon((all_sprites, upgrades), assets['mov_spd_icon'], collided_enemy[0].rect.center)
             elif att_spd_flag and not mov_spd_flag:
@@ -48,6 +57,9 @@ def handle_collisions(lasers, enemies, player, all_sprites, explosions, upgrades
             player.cooldown_time = max(player.cooldown_time - 25, GAME_SETTINGS['min_attack_cooldown'])
 
 def display_game_info(screen, font, title, info, topleft_point, border=False, color=(230, 230, 230)):
+    '''
+    Displays game information such as score and lives on the screen.
+    '''
     title_surface = font.render(f"{title}: ", True, color)
     title_rect = title_surface.get_frect(topleft=topleft_point)
     info_surface = font.render(str(info), True, color)
@@ -58,6 +70,9 @@ def display_game_info(screen, font, title, info, topleft_point, border=False, co
         pygame.draw.rect(screen, (230, 230, 230), info_rect.inflate(15, 15), 5, 5)
 
 def fade(screen, draw_window, width, height):
+    '''
+    Creates a fade effect on the screen.
+    '''
     fade_surface = pygame.Surface((width, height))
     fade_surface.fill((0, 0, 0))
     for alpha in range(0, 300):
@@ -68,46 +83,48 @@ def fade(screen, draw_window, width, height):
         pygame.time.delay(5)
 
 def game_over_screen(screen, font, game_over_font, high_scores, current_score, lives, all_sprites):
-    # Update high scores
+    '''
+    Displays the game over screen with final score and high scores.
+    '''
     updated_scores = update_high_score(high_scores, current_score)
     write_high_scores(PATHS['high_scores'], updated_scores)
-    
+
     # Fade effect
     fade(screen, lambda: draw_window(screen, all_sprites, current_score, lives, font), SCREEN_WIDTH, SCREEN_HEIGHT)
-    
+
     # Game over display
     game_over = True
     screen.fill('black')
-    
+
     # Game over text
     game_over_text = game_over_font.render('Game Over', True, (255, 0, 0))
     game_over_rect = game_over_text.get_rect(center=(SCREEN_WIDTH/2, SCREEN_HEIGHT/4))
     screen.blit(game_over_text, game_over_rect)
-    
+
     # Instructions
     instruction_text = font.render('Press ESC to exit...', True, (255, 0, 0))
     instruction_rect = instruction_text.get_rect(midtop=game_over_rect.inflate(0, 30).midbottom)
     screen.blit(instruction_text, instruction_rect)
-    
+
     # Final score
-    display_game_info(screen, font, 'Final Score', current_score, 
+    display_game_info(screen, font, 'Final Score', current_score,
                      instruction_rect.inflate(0, 30).bottomleft, color=(255, 0, 0))
-    
+
     # High scores
     leaderboard_text = font.render('High Scores:', True, (255, 0, 0))
     leaderboard_rect = leaderboard_text.get_rect(topleft=instruction_rect.inflate(0, 5 * font.get_height()).bottomleft)
     screen.blit(leaderboard_text, leaderboard_rect)
-    
+
     # Display scores
     y_offset = font.get_height() + 10
     for idx, score in enumerate(updated_scores[:5]):
-        display_game_info(screen, font, str(idx+1), score, 
-                         (leaderboard_rect.left, leaderboard_rect.top + y_offset), 
+        display_game_info(screen, font, str(idx+1), score,
+                         (leaderboard_rect.left, leaderboard_rect.top + y_offset),
                          color=(255, 0, 0))
         y_offset += font.get_height() + 10
-    
+
     pygame.display.flip()
-    
+
     # Wait for input
     while game_over:
         for event in pygame.event.get():
@@ -116,6 +133,9 @@ def game_over_screen(screen, font, game_over_font, high_scores, current_score, l
     return True
 
 def generate_stars(num_stars, star_surface):
+    '''
+    Generates random positions for stars on the screen.
+    '''
     star_width, star_height = star_surface.get_size()
     star_positions = []
     max_tries = 50
@@ -132,10 +152,16 @@ def generate_stars(num_stars, star_surface):
     return star_positions
 
 def draw_window(screen, all_sprites, score, lives, font):
+    '''
+    Draws the game window with the current score and lives.
+    '''
     display_game_info(screen, font, 'Score', score, (10, 10), True)
     display_game_info(screen, font, 'Lives', lives, (10, font.get_height() + 20))
 
 def read_high_scores(path):
+    '''
+    Reads high scores from a file.
+    '''
     try:
         with open(path, 'r') as file:
             return [int(line.strip()) for line in file.readlines()]
@@ -143,10 +169,16 @@ def read_high_scores(path):
         return [0] * 5
 
 def write_high_scores(path, scores):
+    '''
+    Writes high scores to a file.
+    '''
     with open(path, 'w') as file:
         for score in scores:
             file.write(f"{score}\n")
 
 def update_high_score(current_scores, new_score):
+    '''
+    Updates the list of high scores with a new score.
+    '''
     updated = current_scores + [new_score]
     return sorted(updated, reverse=True)[:5]
