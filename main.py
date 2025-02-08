@@ -3,6 +3,7 @@ This module contains the main execution code for the project.
 """
 import sys
 import pygame
+from typing import Dict, List
 from config import SCREEN_WIDTH, SCREEN_HEIGHT, PATHS, GAME_SETTINGS
 from sprites import Player, Enemy, Star
 from game_functions import generate_stars, read_high_scores
@@ -16,7 +17,7 @@ clock = pygame.time.Clock()
 font = pygame.font.Font(PATHS['fonts']['regular'], 30)
 game_over_font = pygame.font.Font(PATHS['fonts']['game_over'], 100)
 
-def load_assets():
+def load_assets() -> Dict[str, Dict[str, pygame.Surface] | List[pygame.Surface] | Dict[str, pygame.mixer.Sound]]:
     '''
     This func loads the assets from the config file.
     '''
@@ -46,21 +47,21 @@ def load_assets():
     return assets_to_return
 
 # Game state
-game_state = {
-        'score': 0,
-        'lives': 3,
-        'running': True,
-        'spawn_cooldown': GAME_SETTINGS['initial_spawn_cooldown'],
-        'last_difficulty_increase': 0,
-    }
+game_state: Dict[str, int | bool] = {
+    'score': 0,
+    'lives': 3,
+    'running': True,
+    'spawn_cooldown': GAME_SETTINGS['initial_spawn_cooldown'],
+    'last_difficulty_increase': 0,
+}
 
 # Sprite groups
-all_sprites = pygame.sprite.Group()
-lasers = pygame.sprite.Group()
-enemies = pygame.sprite.Group()
-explosions = pygame.sprite.Group()
-upgrades = pygame.sprite.Group()
-stars = pygame.sprite.Group()
+all_sprites: pygame.sprite.Group = pygame.sprite.Group()
+lasers: pygame.sprite.Group = pygame.sprite.Group()
+enemies: pygame.sprite.Group = pygame.sprite.Group()
+explosions: pygame.sprite.Group = pygame.sprite.Group()
+upgrades: pygame.sprite.Group = pygame.sprite.Group()
+stars: pygame.sprite.Group = pygame.sprite.Group()
 
 # Load assets and create entities
 assets = load_assets()
@@ -68,26 +69,26 @@ player = Player(all_sprites, [all_sprites, lasers], assets['sounds']['laser'])
 assets['sounds']['background'].play(loops=-1)
 
 # Generate stars
-star_rects = generate_stars(GAME_SETTINGS['num_stars'], assets['star'])
+star_rects: List[pygame.Rect] = generate_stars(GAME_SETTINGS['num_stars'], assets['star'])
 for rect in star_rects:
     Star(stars, assets['star'], rect)
 
 # Load high scores
-high_scores = read_high_scores(PATHS['high_scores'])
-
+high_scores: List[int] = read_high_scores(PATHS['high_scores'])
 
 # Main game loop
 while game_state['running']:
-    dt = clock.tick(60) / 1000
-    current_time = pygame.time.get_ticks()
-    keys = pygame.key.get_pressed()
+    dt: float = clock.tick(60) / 1000
+    current_time: int = pygame.time.get_ticks()
+    keys: List[bool] = pygame.key.get_pressed()
+
     # Event handling
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             game_state['running'] = False
 
     # Progressive difficulty
-    time_since_last_increase = current_time - game_state['last_difficulty_increase']
+    time_since_last_increase: int = current_time - game_state['last_difficulty_increase']
     if time_since_last_increase > GAME_SETTINGS['difficulty_increase_interval']:
         game_state['spawn_cooldown'] = max(100, int(game_state['spawn_cooldown'] * 0.92))
         game_state['last_difficulty_increase'] = current_time
@@ -98,9 +99,11 @@ while game_state['running']:
 
     # Update
     all_sprites.update(keys, dt)
+
     # Collision handling
     handle_collisions(lasers, enemies, player, all_sprites,
                       explosions, upgrades, assets, game_state)
+
     # Check game over
     if game_state['lives'] <= 0:
         game_state['running'] = game_over_screen(

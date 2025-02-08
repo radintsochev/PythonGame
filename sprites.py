@@ -1,21 +1,13 @@
-"""
-This module defines various sprite classes for the game:
-    Player: Represents the player character, handles movement and shooting.
-    Laser: Represents the laser shot by the player.
-    Enemy: Represents the enemy characters that move down the screen.
-    Explosion: Represents the explosion animation when an enemy is destroyed.
-    UpgradeIcon: Represents an upgrade icon that appears on the screen.
-    Star: Represents a star in the background.
-"""
 import random
 import pygame
+from typing import List, Tuple
 from config import PATHS, SCREEN_WIDTH, SCREEN_HEIGHT, GAME_SETTINGS
 
 class Player(pygame.sprite.Sprite):
     '''
     This class represents the player ship.
     '''
-    def __init__(self, groups, laser_groups, laser_sound):
+    def __init__(self, groups: List[pygame.sprite.Group], laser_groups: List[pygame.sprite.Group], laser_sound: pygame.mixer.Sound) -> None:
         super().__init__(groups)
         self.image = pygame.image.load(PATHS['player']).convert_alpha()
         self.rect = self.image.get_frect(center=(SCREEN_WIDTH/2, SCREEN_HEIGHT/2))
@@ -27,7 +19,7 @@ class Player(pygame.sprite.Sprite):
         self.laser_groups = laser_groups
         self.laser_sound = laser_sound
 
-    def laser_timer(self):
+    def laser_timer(self) -> None:
         '''
         Enables the cooldown for shooting.
         '''
@@ -36,7 +28,7 @@ class Player(pygame.sprite.Sprite):
             if current_time - self.laser_shoot_time >= self.cooldown_time:
                 self.can_shoot = True
 
-    def update(self, keys, deltatime):
+    def update(self, keys: pygame.key.ScancodeWrapper, deltatime: float) -> None:
         '''
         Moves the player, getting the input from the keyboard.
         '''
@@ -65,13 +57,13 @@ class Laser(pygame.sprite.Sprite):
     '''
     This class represents the laser shot from the player.
     '''
-    def __init__(self, groups, surface, position):
+    def __init__(self, groups: List[pygame.sprite.Group], surface: pygame.Surface, position: Tuple[int, int]) -> None:
         super().__init__(groups)
         self.image = surface
         self.rect = self.image.get_frect(midbottom=position)
         self.speed = 500
 
-    def update(self, _, deltatime):
+    def update(self, _: None, deltatime: float) -> None:
         '''
         Moves the laser foward.
         '''
@@ -83,7 +75,7 @@ class Enemy(pygame.sprite.Sprite):
     '''
     This class represents the enemy ships.
     '''
-    def __init__(self, groups, surface):
+    def __init__(self, groups: List[pygame.sprite.Group], surface: pygame.Surface) -> None:
         super().__init__(groups)
         self.image = surface
         enemy_width = self.image.get_size()[0]
@@ -91,7 +83,7 @@ class Enemy(pygame.sprite.Sprite):
         self.rect = self.image.get_frect(center=position)
         self.speed = 250
 
-    def update(self, _, deltatime):
+    def update(self, _: None, deltatime: float) -> None:
         '''
         Moves the enemy down towards the player.
         '''
@@ -103,14 +95,14 @@ class Explosion(pygame.sprite.Sprite):
     '''
     This class represents the explosion after destoying the enemies.
     '''
-    def __init__(self, groups, frames, position):
+    def __init__(self, groups: List[pygame.sprite.Group], frames: List[pygame.Surface], position: Tuple[int, int]) -> None:
         super().__init__(groups)
         self.frames = frames
         self.frame_index = 0
         self.image = self.frames[self.frame_index]
         self.rect = self.image.get_frect(center=position)
 
-    def update(self, _, deltatime):
+    def update(self, _: None, deltatime: float) -> None:
         '''
         Animates the explosion.
         '''
@@ -124,13 +116,13 @@ class UpgradeIcon(pygame.sprite.Sprite):
     '''
     This class represents the upgrades that someties spawn after killing an enemy.
     '''
-    def __init__(self, groups, surface, position):
+    def __init__(self, groups: List[pygame.sprite.Group], surface: pygame.Surface, position: Tuple[int, int]) -> None:
         super().__init__(groups)
         self.image = surface
         self.rect = self.image.get_frect(center=position)
         self.lifetime = 0
 
-    def update(self, _, deltatime):
+    def update(self, _: None, deltatime: float) -> None:
         '''
         Checks if it's time to despawn the icon.
         '''
@@ -140,9 +132,9 @@ class UpgradeIcon(pygame.sprite.Sprite):
 
 class Star(pygame.sprite.Sprite):
     '''
-    THis class represents the stars in the background.
+    This class represents the stars in the background.
     '''
-    def __init__(self, groups, surface, rect):
+    def __init__(self, groups: List[pygame.sprite.Group], surface: pygame.Surface, rect: pygame.Rect) -> None:
         super().__init__(groups)
         self.image = surface
         self.rect = rect

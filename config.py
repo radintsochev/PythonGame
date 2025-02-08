@@ -3,11 +3,12 @@ Configuration file for the Python game
 Contains constants and settings used throughout the game
 '''
 from os.path import join
+from typing import Dict, List
 
-SCREEN_WIDTH = 1280
-SCREEN_HEIGHT = 720
+SCREEN_WIDTH: int = 1280
+SCREEN_HEIGHT: int = 720
 
-PATHS = {
+PATHS: Dict[str, str | List[str] | Dict[str, str]] = {
     'player': join('game_assets', 'player_ship.png'),
     'laser': join('game_assets', 'laser.png'),
     'enemy': join('game_assets', 'enemy_ship.png'),
@@ -29,7 +30,7 @@ PATHS = {
     'high_scores': join('game_assets', 'high_scores.txt')
 }
 
-GAME_SETTINGS = {
+GAME_SETTINGS: Dict[str, int | float] = {
     'mov_spd_rate': 0.3,
     'att_spd_rate': 0.3,
     'initial_spawn_cooldown': 2000,

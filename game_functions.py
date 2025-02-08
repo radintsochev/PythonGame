@@ -5,11 +5,20 @@ and managing high scores.
 '''
 import random
 import pygame
+from typing import List, Tuple, Callable
 from config import GAME_SETTINGS, SCREEN_WIDTH, SCREEN_HEIGHT, PATHS
 from sprites import UpgradeIcon, Explosion
 
-def handle_collisions(lasers, enemies, player, all_sprites,
-                      explosions, upgrades, assets, game_state):
+def handle_collisions(
+    lasers: pygame.sprite.Group,
+    enemies: pygame.sprite.Group,
+    player: pygame.sprite.Sprite,
+    all_sprites: pygame.sprite.Group,
+    explosions: pygame.sprite.Group,
+    upgrades: pygame.sprite.Group,
+    assets: dict,
+    game_state: dict
+) -> None:
     '''
     Handles collisions between lasers and enemies, player and enemies, and player and upgrades.
     '''
@@ -56,7 +65,15 @@ def handle_collisions(lasers, enemies, player, all_sprites,
             # Use the setting from config
             player.cooldown_time = max(player.cooldown_time - 25, GAME_SETTINGS['min_attack_cooldown'])
 
-def display_game_info(screen, font, title, info, topleft_point, border=False, color=(230, 230, 230)):
+def display_game_info(
+    screen: pygame.Surface,
+    font: pygame.font.Font,
+    title: str,
+    info: int,
+    topleft_point: Tuple[int, int],
+    border: bool = False,
+    color: Tuple[int, int, int] = (230, 230, 230)
+) -> None:    
     '''
     Displays game information such as score and lives on the screen.
     '''
@@ -69,7 +86,12 @@ def display_game_info(screen, font, title, info, topleft_point, border=False, co
     if border:
         pygame.draw.rect(screen, (230, 230, 230), info_rect.inflate(15, 15), 5, 5)
 
-def fade(screen, draw_window, width, height):
+def fade(
+    screen: pygame.Surface,
+    draw_window: Callable[[], None],
+    width: int,
+    height: int
+) -> None:
     '''
     Creates a fade effect on the screen.
     '''
@@ -82,7 +104,15 @@ def fade(screen, draw_window, width, height):
         pygame.display.update()
         pygame.time.delay(5)
 
-def game_over_screen(screen, font, game_over_font, high_scores, current_score, lives, all_sprites):
+def game_over_screen(
+    screen: pygame.Surface,
+    font: pygame.font.Font,
+    game_over_font: pygame.font.Font,
+    high_scores: List[int],
+    current_score: int,
+    lives: int,
+    all_sprites: pygame.sprite.Group
+) -> bool:
     '''
     Displays the game over screen with final score and high scores.
     '''
@@ -132,7 +162,10 @@ def game_over_screen(screen, font, game_over_font, high_scores, current_score, l
                 return False
     return True
 
-def generate_stars(num_stars, star_surface):
+def generate_stars(
+    num_stars: int,
+    star_surface: pygame.Surface
+) -> List[pygame.Rect]:
     '''
     Generates random positions for stars on the screen.
     '''
@@ -151,14 +184,20 @@ def generate_stars(num_stars, star_surface):
             tries += 1
     return star_positions
 
-def draw_window(screen, all_sprites, score, lives, font):
+def draw_window(
+    screen: pygame.Surface,
+    all_sprites: pygame.sprite.Group,
+    score: int,
+    lives: int,
+    font: pygame.font.Font
+) -> None:
     '''
     Draws the game window with the current score and lives.
     '''
     display_game_info(screen, font, 'Score', score, (10, 10), True)
     display_game_info(screen, font, 'Lives', lives, (10, font.get_height() + 20))
 
-def read_high_scores(path):
+def read_high_scores(path: str) -> List[int]:
     '''
     Reads high scores from a file.
     '''
@@ -168,7 +207,7 @@ def read_high_scores(path):
     except:
         return [0] * 5
 
-def write_high_scores(path, scores):
+def write_high_scores(path: str, scores: List[int]) -> None:
     '''
     Writes high scores to a file.
     '''
@@ -176,7 +215,7 @@ def write_high_scores(path, scores):
         for score in scores:
             file.write(f"{score}\n")
 
-def update_high_score(current_scores, new_score):
+def update_high_score(current_scores: List[int], new_score: int) -> List[int]:
     '''
     Updates the list of high scores with a new score.
     '''
